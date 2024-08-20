@@ -65,6 +65,8 @@ const WalletComponent = () => {
     };
 
    
+
+    return (
         <div className="">
             <div className="flex flex-col items-center gap-4 justify-between p-24">
                 <div className="flex">
