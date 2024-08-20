@@ -64,9 +64,7 @@ const WalletComponent = () => {
         alert("Public key copied to clipboard!");
     };
 
-    const truncatedPublicKey = publicKeys[0] ? `${publicKeys[0].slice(0, 6)}...${publicKeys[0].slice(-6)}` : "";
-
-    return (
+   
         <div className="">
             <div className="flex flex-col items-center gap-4 justify-between p-24">
                 <div className="flex">
@@ -84,12 +82,12 @@ const WalletComponent = () => {
                                 </button>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="flex flex-col">
+                                <div className="flex flex-col gap-2">
                                 {publicKeys.map((key, index) => {
                                     return(
-                                        <div className="">
+                                        <div className="flex justify-between items-center gap-2">
                                         <p key={index} className="font-mono text-lg">
-                                    {truncatedPublicKey}
+                                    {publicKeys[index] ? `${publicKeys[index].slice(0, 6)}...${publicKeys[index].slice(-6)}` : ""}
                                 </p>
                                     <button 
                                     onClick={copyToClipboard} 
