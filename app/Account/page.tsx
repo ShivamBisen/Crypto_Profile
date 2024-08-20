@@ -13,55 +13,58 @@ const tabs: Tab[] = ["Account 1", "Account 2", "Account 3"];
 const WalletComponent = () => {
     const [tab, setTab] = useState<Tab>("Account 1");
     const [mnemonic, setMnemonic] = useStake();
-    const [publicKey, setPublicKey] = useState('');
-    const [balance, setBalance] = useState(0);
+    const [publicKeys, setPublicKeys] = useState<string[]>([]);
+    const [balance, setBalance] = useState<number>(0);
+
+    const seed = mnemonicToSeedSync(mnemonic.toString());
+    const hdwallet = hdkey.fromMasterSeed(seed);
+
+    const addWallet = () => {
+        const path = `m/44'/60'/0'/0/${publicKeys.length}`;
+        const wallet = hdwallet.derivePath(path).getWallet();
+        const ethPublicKey = wallet.getAddressString();
+        setPublicKeys(prev => [...prev, ethPublicKey]);
+    };
 
     useEffect(() => {
-        const generateKeys = async () => {
-            const seed = mnemonicToSeedSync(mnemonic.toString());
-            const hdwallet = hdkey.fromMasterSeed(seed);
-            const path = "m/44'/60'/0'/0/0";  // Correct Ethereum path
+        const generateInitialKey = async () => {
+            const path = "m/44'/60'/0'/0/0";
             const wallet = hdwallet.derivePath(path).getWallet();
             const ethPublicKey = wallet.getAddressString();
-
-            setPublicKey(ethPublicKey);
+            setPublicKeys([ethPublicKey]);
         };
 
-        const getBalance = async () => {
+        const getBalance = async (publicKey: string) => {
             try {
                 const response = await axios.post('https://eth-mainnet.g.alchemy.com/v2/C4MFdUO-LStFpj6R7CLQt47wZ0yMLcsO', {
                     "jsonrpc": "2.0",
                     "id": 1,
                     "method": "eth_getBalance",
-                    "params": [`${publicKey}`, "latest"]
+                    "params": [publicKey, "latest"]
                 });
         
-                // Convert the hexadecimal balance to decimal
                 const hexBalance = response.data.result;
                 const decimalBalance = parseInt(hexBalance, 16);
-        
-                // Convert Wei to Ether (1 Ether = 10^18 Wei)
                 const etherBalance = decimalBalance / 10 ** 18;
-        
-                // Format to 7 decimal places
                 setBalance(etherBalance);
-        
             } catch (error) {
                 console.error("Error fetching balance:", error);
             }
         };
-        
 
-        generateKeys();
-        getBalance();
-    }, [mnemonic, publicKey]);
+        if (publicKeys.length > 0) {
+            getBalance(publicKeys[0]);  // Assuming you're showing balance for the first account
+        } else {
+            generateInitialKey();
+        }
+    }, [mnemonic, publicKeys]);
 
     const copyToClipboard = () => {
-        navigator.clipboard.writeText(publicKey);
+        navigator.clipboard.writeText(publicKeys[0]);
         alert("Public key copied to clipboard!");
     };
 
-    const truncatedPublicKey = `${publicKey.slice(0, 6)}...${publicKey.slice(-6)}`;
+    const truncatedPublicKey = publicKeys[0] ? `${publicKeys[0].slice(0, 6)}...${publicKeys[0].slice(-6)}` : "";
 
     return (
         <div className="">
@@ -74,21 +77,31 @@ const WalletComponent = () => {
                                 <h2 className="text-xl font-bold">Wallets</h2>
                                 <button 
                                     type="button" 
+                                    onClick={addWallet}
                                     className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700"
                                 >
                                     Add Wallet
                                 </button>
                             </div>
                             <div className="flex items-center gap-2">
-                                <p className="font-mono text-lg">
+                                <div className="flex flex-col">
+                                {publicKeys.map((key, index) => {
+                                    return(
+                                        <div className="">
+                                        <p key={index} className="font-mono text-lg">
                                     {truncatedPublicKey}
                                 </p>
-                                <button 
+                                    <button 
                                     onClick={copyToClipboard} 
                                     className="text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-1.5"
                                 >
                                     Copy
                                 </button>
+                            </div>
+                                    )
+                                })}
+                                </div>
+                                
                             </div>
                         </div>
                     </div>
@@ -112,5 +125,6 @@ const WalletComponent = () => {
         </div>
     );
 };
+
 
 export default WalletComponent;
