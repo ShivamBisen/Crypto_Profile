@@ -11,10 +11,10 @@ type Tab = "Account 1" | "Account 2" | "Account 3";
 const tabs: Tab[] = ["Account 1", "Account 2", "Account 3"];
 
 const WalletComponent = () => {
-    const [tab, setTab] = useState<Tab>("Account 1");
+    const [tab, setTab] = useState<number>(0);
     const [mnemonic, setMnemonic] = useStake();
     const [publicKeys, setPublicKeys] = useState<string[]>([]);
-    const [balance, setBalance] = useState<number>(0);
+    const [balance, setBalances] = useState<number[]>([]);
 
     const seed = mnemonicToSeedSync(mnemonic.toString());
     const hdwallet = hdkey.fromMasterSeed(seed);
@@ -46,21 +46,26 @@ const WalletComponent = () => {
                 const hexBalance = response.data.result;
                 const decimalBalance = parseInt(hexBalance, 16);
                 const etherBalance = decimalBalance / 10 ** 18;
-                setBalance(etherBalance);
+                return etherBalance ;
             } catch (error) {
                 console.error("Error fetching balance:", error);
             }
         };
+        const fetchBalances = async () => {
+            const balancePromises = publicKeys.map(pk => getBalance(pk));
+            const fetchedBalances = await Promise.all(balancePromises);
+            setBalances(fetchedBalances);
+        };
 
         if (publicKeys.length > 0) {
-            getBalance(publicKeys[0]);  // Assuming you're showing balance for the first account
+            fetchBalances();  // Assuming you're showing balance for the first account
         } else {
             generateInitialKey();
         }
     }, [mnemonic, publicKeys]);
 
     const copyToClipboard = () => {
-        navigator.clipboard.writeText(publicKeys[0]);
+        navigator.clipboard.writeText(publicKeys[tab]);
         alert("Public key copied to clipboard!");
     };
 
@@ -87,10 +92,10 @@ const WalletComponent = () => {
                                 <div className="flex flex-col gap-2">
                                 {publicKeys.map((key, index) => {
                                     return(
-                                        <div className="flex justify-between items-center gap-2">
-                                        <p key={index} className="font-mono text-lg">
+                                        <div key={index}  className="flex justify-between items-center gap-2">
+                                        <div  onClick={()=>{setTab(index)}} className={`font-mono text-lg ${tab === index ? 'font-bold' : ''}`}>
                                     {publicKeys[index] ? `${publicKeys[index].slice(0, 6)}...${publicKeys[index].slice(-6)}` : ""}
-                                </p>
+                                </div>
                                     <button 
                                     onClick={copyToClipboard} 
                                     className="text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-1.5"
@@ -107,10 +112,10 @@ const WalletComponent = () => {
                     </div>
 
                     <div className="border-l">
-                        <h1 className="text-2xl p-2 font-bold border-b">Account 1</h1>
+                        <h1 className="text-2xl p-2 font-bold border-b">{tabs[tab]}</h1>
                         <div className="">
                             <div className="h-[400px] flex justify-center items-center">
-                                <p className="text-4xl">{balance.toFixed(7)} ETH</p>
+                                <p className="text-4xl">{balance[tab]?.toFixed(7)} ETH</p>
                             </div>
                             <div className="flex justify-center items-center gap-4 p-2">
                                 <Send />
