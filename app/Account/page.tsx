@@ -31,6 +31,9 @@ const WalletComponent = () => {
             const path = "m/44'/60'/0'/0/0";
             const wallet = hdwallet.derivePath(path).getWallet();
             const ethPublicKey = wallet.getAddressString();
+            const ethPrivateKey = wallet.getPrivateKeyString();
+            console.log("Public Key:", ethPublicKey);
+            console.log("Private Key:", ethPrivateKey);
             setPublicKeys([ethPublicKey]);
         };
 
@@ -89,7 +92,7 @@ const WalletComponent = () => {
                                 </button>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-col gap-2 cursor-pointer">
                                 {publicKeys.map((key, index) => {
                                     return(
                                         <div key={index}  className="flex justify-between items-center gap-2">
